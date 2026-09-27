@@ -80,6 +80,65 @@ re-identify contributors. Google's handling of the underlying form
 infrastructure is governed by Google's Privacy Policy
 (https://policies.google.com/privacy).
 
+## Optional federated learning (opt-in)
+
+> DRAFT for review. This section describes a feature that is in development
+> and not yet part of a BabelBrain release.
+
+BabelBrain can optionally help improve a fast neural-network model of
+transcranial ultrasound, trained jointly by several BabelBrain labs with
+**federated learning**. In federated learning, the training data stays at each
+lab; only changes to the model are shared. This feature is **off by default**
+and has no first-launch prompt. You can turn it on, change it or turn it off at
+any time under **Advanced Options → Federated Learning**.
+
+| Level | What happens |
+|-------|--------------|
+| **Off (default)** | Nothing is saved and nothing is shared. |
+| **Collect samples locally** | After each successful Step 2 run planned with a real CT, BabelBrain saves one training sample in a folder on your computer. Nothing is shared. |
+| **Collect and train** | As above, and a separate federated learning client, installed and enrolled by you, trains the model on these samples and shares the results described below. |
+
+### What a training sample holds, and where it stays
+
+A sample is a small crop of the simulation around the ultrasound beam: the CT
+values, the simulated pressure fields in water and through the skull, and
+speed-of-sound, attenuation and brain-tissue maps on the same grid, plus the
+frequency, voxel size, transducer type, BabelBrain version and the month of
+export. Samples are saved only in the sample store folder you choose, by
+default `BabelBrainFL/samples` in your home folder, and are **never uploaded**.
+
+A sample never holds names, file names or paths, dates other than the month of
+export, NIfTI headers or scanner coordinates, subject or target names,
+trajectory files, or T1w or T2w MRI images. To keep all targets of one subject
+together when the model is checked locally, each sample carries a code derived
+from its input folder with a random secret that is created on your computer and
+never leaves it; the code cannot be turned back into the folder name.
+
+### What is shared at the "Collect and train" level
+
+The federated learning client sends, over an encrypted connection, to a
+coordination server run by the NeuroFUS laboratory at the University of Calgary:
+
+- changes to the model's weights after training on your samples, which do not
+  contain the samples;
+- the number of samples used, and summary measures of how well the model fits
+  them, such as average errors;
+- technical information about the training run, such as its duration, memory
+  use, device type, and log messages, which contain no file names or paths.
+
+No images, samples, simulation results, file names or personal information are
+sent. The client identifies your lab only with a random site identifier and
+the access token it receives at enrolment.
+
+### Withdrawing and deleting
+
+- Choose **Off** to stop saving samples. Choosing **Collect samples locally**
+  stops any training contribution while keeping your samples.
+- The **Federated Learning** tab lists every stored sample; **Delete** removes
+  it from your computer. Deleting the sample store folder removes all of them.
+- Model updates already combined into a shared model cannot be separated from
+  it again. Contact us at the address below to leave the federated network.
+
 ## Legal basis and your control
 
 - Participation is **voluntary and consent-based** (opt-in). No telemetry is sent
