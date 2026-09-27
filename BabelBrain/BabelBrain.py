@@ -74,6 +74,7 @@ from ClockDialog import ClockDialog
 from GUIComponents.nifti_viewer import NiftiViewerWindow
 
 from Telemetry.Telemetry import send_telemetry
+from FederatedLearning.hook import on_step2_finished
 from datetime import datetime, timezone
 
 
@@ -1403,6 +1404,7 @@ class BabelBrain(QWidget):
             self._TrackingTime['Calculation time domain']=steptime
         elif step == 'ultrasound':
             self._TrackingTime['Calculation time ultrasound']=steptime
+            on_step2_finished(self) # opt-in FL sample export, off by default
         elif step == 'thermal':
             self._TrackingTime['Calculation time thermal']=steptime
         else:
