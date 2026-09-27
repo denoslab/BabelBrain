@@ -62,7 +62,7 @@ def run_info(subject_folder, **overrides):
         'aperture_mm': 50.0,
         'options': {'bForceHomogenousMedium': False, 'bExtractAirRegions': True,
                     'bUseRayleighForWater': True, 'OptimizedWeightsFile': '',
-                    'CTMapCombo': (0, 0)},
+                    'CTMapCombo': ('GE', '120', 'B', '', '0.5, 0.6')},
         'subject_folder': subject_folder,
     }
     info.update(overrides)

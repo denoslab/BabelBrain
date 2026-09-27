@@ -74,7 +74,8 @@ def recover_run_info(full, args):
     info.update({
         'babelbrain_version': args.babelbrain_version,
         'bUseCT': True, 'CTType': eligibility.CT_TYPE_REAL_CT,
-        'options': dict(eligibility.REQUIRED_OPTIONS, OptimizedWeightsFile=''),
+        'options': dict(eligibility.REQUIRED_OPTIONS, OptimizedWeightsFile='',
+                        CTMapCombo=eligibility.REQUIRED_CT_MAP),
         # Default BabelBrain output folder is the T1W folder, as for live exports
         'subject_folder': os.path.dirname(full),
     })

@@ -50,6 +50,8 @@ def snapshot(app):
             'options': dict(app.CommomAcOptions()),
             # Used only to derive the salted group id; never stored
             'subject_folder': os.path.dirname(str(config.get('T1W', ''))),
+            # The crop reads the brain mask from the SimNIBS segmentation, T5; never stored
+            'simnibs_folder': config.get('simbnibs_path'),
         },
     }
 
