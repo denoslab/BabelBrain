@@ -2,9 +2,10 @@
 Eligibility rules v1: which Step 2 runs may become training samples.
 
 Each rule returns ``(ok, reason)``. Reasons are short codes, counted for the
-FL tab and never logged with paths. Values marked CONFIRM wait for Tayeb's
-answers, questions T4 to T6 in babelbrain-docs/open-questions.md; a test pins
-each one, so changing it is a deliberate edit.
+FL tab and never logged with paths. The values below match the simulations
+tFUS-FNO was trained on, confirmed on 2026-09-27, answers T4 and T6 in
+babelbrain-docs/open-questions.md. A test pins each one, so changing it is a
+deliberate edit.
 """
 
 import os
@@ -14,20 +15,21 @@ from . import schema
 # CTType index in the BabelBrain input dialog: 0 no CT, 1 real CT, 2 ZTE, 3 PETRA, 4 density
 CT_TYPE_REAL_CT = 1
 
-# CONFIRM with Tayeb, T6: how far the run's frequency may be from its bucket
+# How far the run's frequency may be from its bucket, T6
 FREQUENCY_TOLERANCE = 0.02
-# CONFIRM with Tayeb, T6: transducers whose fields the model was trained on
+# Transducers whose fields the model was trained on: single element only, T6
 TX_ALLOWLIST = ('Single',)
 BABELBRAIN_VERSION_ALLOWLIST = ('0.8.1', '0.8.2')
-# CONFIRM with Tayeb, T4: the physics options of the training simulations, as in
-# CommomAcOptions(). These are BabelBrain's defaults.
+# The physics options of the training simulations, as in CommomAcOptions():
+# BabelBrain's defaults, T4
 REQUIRED_OPTIONS = {
     'bForceHomogenousMedium': False,
     'bExtractAirRegions': True,
     'bUseRayleighForWater': True,
 }
-# CONFIRM with Tayeb, T4: the CT mapping, CTMapCombo, his simulations used. None skips the check.
-REQUIRED_CT_MAP = None
+# The CT mapping, CTMapCombo: BabelBrain's default for real CT, row 19 of WebbHU_SoS.csv
+# (ORIGINAL_BABELBRAIN_SELECTION in SelFiles.py), T4
+REQUIRED_CT_MAP = ('GE', '120', 'B', '', '0.5, 0.6')
 
 
 def rule_step2_outputs(full_sol_path, water_sol_path):
@@ -82,7 +84,8 @@ def rule_options(run_info):
             return False, 'nondefault_option'
     if options.get('OptimizedWeightsFile'):
         return False, 'nondefault_option'
-    if REQUIRED_CT_MAP is not None and options.get('CTMapCombo') != REQUIRED_CT_MAP:
+    ct_map = options.get('CTMapCombo')
+    if REQUIRED_CT_MAP is not None and (ct_map is None or tuple(ct_map) != REQUIRED_CT_MAP):
         return False, 'nondefault_option'
     return True, 'ok'
 

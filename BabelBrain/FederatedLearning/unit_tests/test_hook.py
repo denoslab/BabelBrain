@@ -22,7 +22,7 @@ def fake_app(tmp_path, **config):
     subject = tmp_path / 'studies' / 'Subject_Anonymous_7'
     full, water = synthetic.fake_step2_outputs(str(subject))
     cfg = {'version': '0.8.2\n', 'TxSystem': 'Single', 'bUseCT': True, 'CTType': 1,
-           'T1W': str(subject / 'T1W.nii.gz')}
+           'T1W': str(subject / 'T1W.nii.gz'), 'simbnibs_path': str(subject / 'm2m_subject')}
     cfg.update(config)
     return SimpleNamespace(
         Config=cfg, _Frequency=250e3, _BasePPW=9,
@@ -87,6 +87,7 @@ def test_fl_on_exports_on_a_background_thread(tmp_path, monkeypatch):
     assert info['babelbrain_version'] == '0.8.2'
     assert info['frequency_hz'] == 250e3 and info['ppw'] == 9 and info['tx_system'] == 'Single'
     assert info['subject_folder'].endswith('Subject_Anonymous_7')
+    assert info['simnibs_folder'].endswith('m2m_subject')
 
 
 def test_a_failing_exporter_never_reaches_step2(tmp_path, monkeypatch):

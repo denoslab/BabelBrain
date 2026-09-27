@@ -238,15 +238,26 @@ def test_optimised_weights_are_not_default(setup):
     assert eligibility.rule_options(info) == (False, 'nondefault_option')
 
 
-def test_confirm_values_until_tayeb_answers():
-    """Fails on purpose when a CONFIRM value changes: update this test and the spec together."""
+def test_training_settings_confirmed_on_2026_09_27():
+    """The model's training settings, answers T4 and T6. Change them only with the spec."""
     assert eligibility.FREQUENCY_TOLERANCE == 0.02
     assert eligibility.TX_ALLOWLIST == ('Single',)
     assert eligibility.REQUIRED_OPTIONS == {'bForceHomogenousMedium': False,
                                             'bExtractAirRegions': True,
                                             'bUseRayleighForWater': True}
-    assert eligibility.REQUIRED_CT_MAP is None
+    assert eligibility.REQUIRED_CT_MAP == ('GE', '120', 'B', '', '0.5, 0.6')
     assert crop.CROP_IMPLEMENTED is False
+
+
+def test_ct_mapping_must_be_the_default(setup):
+    info = synthetic.run_info(setup['subject'])
+    # Saved settings come back from YAML as a list
+    info['options']['CTMapCombo'] = list(eligibility.REQUIRED_CT_MAP)
+    assert eligibility.rule_options(info) == (True, 'ok')
+    info['options']['CTMapCombo'] = ('Siemens', '120', 'H', '', '0.5')
+    assert eligibility.rule_options(info) == (False, 'nondefault_option')
+    del info['options']['CTMapCombo']
+    assert eligibility.rule_options(info) == (False, 'nondefault_option')
 
 
 def test_vendored_schema_matches_the_docs():
