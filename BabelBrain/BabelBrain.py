@@ -1537,7 +1537,9 @@ class RunMaskGeneration(QObject):
                                                     'TxOptimizedWeights',
                                                     'PlanTUSRoot',
                                                     'ConnectomeRoot',
-                                                    'TelemetryLevel']:
+                                                    'TelemetryLevel',
+                                                    'FLLevel',
+                                                    'FLStore']:
                 return True
             else:
                 return False
