@@ -8,6 +8,10 @@ Change it only with a schema_version bump and matching changes in Starfish.
 import os
 
 SCHEMA_VERSION = '1.0'
+# Schema 1.1, decision D6: the NeuroFUS test set carries a coarse target region class.
+# Only the backfill tool with --eval-regions writes it; live exports stay at 1.0.
+EVAL_SCHEMA_VERSION = '1.1'
+REGIONS = ('P7', 'P8', 'PO7', 'TP7', 'TP8', 'other')
 STORE_VERSION_DIR = 'v1'
 MANIFEST_NAME = 'manifest.jsonl'
 SALT_NAME = '.salt'
@@ -34,7 +38,8 @@ COMPLEX_FIELDS = ('water_field', 'skull_field')
 REQUIRED_FIELDS = ('sample_id', 'schema_version', 'file', 'sha256', 'frequency_hz', 'bucket_hz',
                    'spacing_mm', 'babelbrain_version', 'tx_system', 'ct_type', 'group_id',
                    'split', 'source')
-OPTIONAL_FIELDS = ('ppw', 'focal_length_mm', 'aperture_mm', 'exported_month', 'fingerprint')
+OPTIONAL_FIELDS = ('ppw', 'focal_length_mm', 'aperture_mm', 'exported_month', 'fingerprint',
+                   'region')
 SOURCES = ('live', 'backfill')
 SPLITS = ('train', 'val')
 
@@ -44,4 +49,5 @@ VAL_PERCENT = 10
 # Never written to a sample or the manifest, documented here to keep it in view:
 # names, dates other than exported_month, file names or paths, NIfTI headers,
 # scanner affines, subject IDs, target names, trajectory files, T1w or T2w MRI.
+# The one exception is the region class above, in the NeuroFUS test set only.
 SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manifest.schema.json')

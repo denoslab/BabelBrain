@@ -96,3 +96,70 @@ def test_command_line(tmp_path, capsys):
     assert backfill.main([folder, '--store', str(tmp_path / 's'), '--dry-run',
                           '--babelbrain-version', '0.8.1', '--real-ct', '--default-options']) == 0
     assert 'Runs found: 4' in capsys.readouterr().out
+
+
+# --------------------------------------------------
+# Region labels for the NeuroFUS test set, D6
+# --------------------------------------------------
+
+EVAL = SimpleNamespace(babelbrain_version='0.8.1', real_ct=True, default_options=True,
+                       eval_regions=True)
+
+
+def test_region_from_name_takes_whole_tokens_of_the_target():
+    tail = '_Single_250kHz_9PPW_DataForSim.h5'
+    cases = {'S01_P7': 'P7', 'S01_PO7': 'PO7', 'S01_TP7': 'TP7', 'S01_tp8-2': 'TP8',
+             'S01_Left_P8_12_Aug_2026': 'P8', 'S01_LeftVIM': 'other', 'S01_P71': 'other',
+             'S01_P7_P8': 'other', 'S01_Target': 'other'}
+    for target, region in cases.items():
+        assert backfill.region_from_name(target + tail) == region, target
+    # A transducer name is never read as a target
+    assert backfill.region_from_name('S01_Target_CTX_250_2ch_250kHz_9PPW_DataForSim.h5') == 'other'
+    assert backfill.region_from_name('no_frequency_DataForSim.h5') == 'other'
+
+
+def eval_folder(tmp_path):
+    root = tmp_path / 'test-subjects'
+    make_run(str(root / 'S1'), 'S1_PO7_Single_250kHz_9PPW_', 11)
+    make_run(str(root / 'S2'), 'S2_TP8_Single_250kHz_9PPW_', 12)
+    make_run(str(root / 'S3'), 'S3_LeftVIM_Single_250kHz_9PPW_', 13)
+    return str(root)
+
+
+def test_eval_regions_dry_run_counts_per_region(tmp_path):
+    out = io.StringIO()
+    backfill.run(eval_folder(tmp_path), store_root=str(tmp_path / 'eval'), dry_run=True,
+                 args=EVAL, out=out)
+    text = out.getvalue()
+    for line in ('would export in region PO7: 1', 'would export in region TP8: 1',
+                 'would export in region other: 1', 'would export in region P7: 0'):
+        assert line in text
+    assert 'LeftVIM' not in text and 'S1' not in text
+
+
+def test_eval_regions_export_writes_1_1_with_regions(tmp_path):
+    store = str(tmp_path / 'eval')
+    outcomes = backfill.run(eval_folder(tmp_path), store_root=store, args=EVAL,
+                            crop=synthetic.fake_crop(), out=io.StringIO())
+    assert outcomes['exported'] == 3
+    entries = SampleStore(store).entries()
+    assert sorted(e['region'] for e in entries) == ['PO7', 'TP8', 'other']
+    assert {e['schema_version'] for e in entries} == {'1.1'}
+    text = open(os.path.join(store, 'v1', 'manifest.jsonl')).read()
+    assert 'LeftVIM' not in text and 'S3' not in text
+
+
+def test_without_the_flag_backfill_writes_no_region(tmp_path):
+    store = str(tmp_path / 'lab-store')
+    backfill.run(eval_folder(tmp_path), store_root=store, args=STATED,
+                 crop=synthetic.fake_crop(), out=io.StringIO())
+    entries = SampleStore(store).entries()
+    assert len(entries) == 3 and all('region' not in e for e in entries)
+    assert {e['schema_version'] for e in entries} == {'1.0'}
+
+
+def test_command_line_eval_regions(tmp_path, capsys):
+    assert backfill.main([eval_folder(tmp_path), '--store', str(tmp_path / 's'), '--dry-run',
+                          '--babelbrain-version', '0.8.1', '--real-ct', '--default-options',
+                          '--eval-regions']) == 0
+    assert 'would export in region PO7: 1' in capsys.readouterr().out

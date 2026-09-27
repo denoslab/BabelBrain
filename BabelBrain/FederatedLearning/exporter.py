@@ -45,12 +45,12 @@ def validate_arrays(arrays):
     return out
 
 
-def _write_h5(path, arrays, sample_id, frequency_hz, bucket_hz):
+def _write_h5(path, arrays, sample_id, frequency_hz, bucket_hz, schema_version):
     import h5py
     with h5py.File(path, 'w') as f:
         for name, arr in arrays.items():
             f.create_dataset(name, data=arr)
-        f.attrs['schema_version'] = schema.SCHEMA_VERSION
+        f.attrs['schema_version'] = schema_version
         f.attrs['sample_id'] = sample_id
         f.attrs['frequency_hz'] = float(frequency_hz)
         f.attrs['spacing_mm'] = schema.BUCKET_SPACING_MM[bucket_hz]
@@ -65,18 +65,25 @@ def _optional_float(value):
 
 
 def export_from_step2(full_sol_path, water_sol_path, run_info, store_root=None, source='live',
-                      crop=None, today=None):
+                      crop=None, today=None, region=None):
     """
     Export one run. ``run_info`` is a plain dict snapshot taken on the caller's thread:
 
     babelbrain_version, tx_system, frequency_hz, ppw, bUseCT, CTType,
     focal_length_mm, aperture_mm, options (as from CommomAcOptions) and
     subject_folder, which is used only to derive the salted group_id.
+
+    ``region``, one of schema.REGIONS, is for the NeuroFUS test set only and
+    makes the sample schema 1.1. Live exports never pass it.
     """
     crop = crop or crop_module.crop_sample
+    version = schema.SCHEMA_VERSION if region is None else schema.EVAL_SCHEMA_VERSION
     store = None
     try:
         store = SampleStore(store_root)
+        if region is not None and region not in schema.REGIONS:
+            store.count('invalid_region')
+            return ExportResult('rejected', 'invalid_region', None)
         ok, reason = eligibility.check(full_sol_path, water_sol_path, run_info)
         if not ok:
             store.count(reason)
@@ -100,12 +107,13 @@ def export_from_step2(full_sol_path, water_sol_path, run_info, store_root=None, 
 
         sample_id = store.new_sample_id()
         digest = store.write_sample_file(
-            bucket, sample_id, lambda tmp: _write_h5(tmp, arrays, sample_id, frequency, bucket))
+            bucket, sample_id,
+            lambda tmp: _write_h5(tmp, arrays, sample_id, frequency, bucket, version))
         group_id = store.group_id(run_info['subject_folder'])
         today = today or datetime.date.today()
         entry = {
             'sample_id': sample_id,
-            'schema_version': schema.SCHEMA_VERSION,
+            'schema_version': version,
             'file': '{}/{}.h5'.format(bucket, sample_id),
             'sha256': digest,
             'frequency_hz': frequency,
@@ -126,6 +134,8 @@ def export_from_step2(full_sol_path, water_sol_path, run_info, store_root=None, 
             value = _optional_float(value)
             if value is not None:
                 entry[key] = value
+        if region is not None:
+            entry['region'] = region
         store.append(entry)
         store.count('exported')
         return ExportResult('exported', 'ok', sample_id)
