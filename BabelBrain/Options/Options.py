@@ -28,6 +28,8 @@ from PlanTUSViewer.RunPlanTUS import RUN_PLAN_TUS
 from BabelViscoFDTD.H5pySimple import SaveToH5py, ReadFromH5py
 
 from Telemetry.TelemetryConsentDialog import TelemetrySettingsWidget, TELEMETRY_OFF
+from FederatedLearning import FL_OFF
+from FederatedLearning.SettingsWidget import FLSettingsWidget
 
 
 
@@ -128,6 +130,8 @@ class OptionalParams(object):
         self._DefaultAdvanced['HomogenousMediumValues']['InitTemperature'] = 37.0
         self._DefaultAdvanced['bForceNoAbsorptionSkullScalp']=False
         self._DefaultAdvanced['TelemetryLevel']=TELEMETRY_OFF
+        self._DefaultAdvanced['FLLevel']=FL_OFF
+        self._DefaultAdvanced['FLStore']=''
         self._DefaultAdvanced['TxOptimizedWeights']={}
         for tx in AllTransducers:
             self._DefaultAdvanced['TxOptimizedWeights'][tx]=''
@@ -163,6 +167,14 @@ class AdvancedOptions(QDialog):
         tab_layout.setContentsMargins(12, 12, 12, 12)
         tab_layout.addWidget(self._telemetryWidget)
         self.ui.tabWidget.addTab(tab_container, "Telemetry")
+
+        # Federated learning tab, opt-in and off by default (FederatedLearning/SettingsWidget.py)
+        self._flWidget = FLSettingsWidget(self.ui.tabWidget, current_level=FL_OFF)
+        fl_container = QWidget()
+        fl_layout = QVBoxLayout(fl_container)
+        fl_layout.setContentsMargins(12, 12, 12, 12)
+        fl_layout.addWidget(self._flWidget)
+        self.ui.tabWidget.addTab(fl_container, "Federated Learning")
 
         self.ui.ContinuepushButton.clicked.connect(self.Continue)
         self.ui.CancelpushButton.clicked.connect(self.Cancel)
@@ -439,6 +451,8 @@ class AdvancedOptions(QDialog):
         self.ui.HomogenousInitTempSpinBox.setValue(values.HomogenousMediumValues['InitTemperature'])
         self.ui.bForceNoAbsorptionSkullScalpcheckBox.setChecked(values.bForceNoAbsorptionSkullScalp)
         self._telemetryWidget.set_level(values.TelemetryLevel)
+        self._flWidget.set_level(values.FLLevel)
+        self._flWidget.set_store_folder(values.FLStore)
         if self._TxSystem in ['CTX_500', 'CTX_250', 'CTX_250_2ch', 'DPX_500', 'DPXPC_300', 'R15287', 'R15473']:
             self.ui.TxWeightLabel.setText("Optimized Weights for Transducer: " +  self._TxSystem)
         self.ui.TxOptimizedWeightsLineEdit.setText(values.TxOptimizedWeights[self._TxSystem])
@@ -501,6 +515,8 @@ class AdvancedOptions(QDialog):
         self.NewValues.bForceNoAbsorptionSkullScalp=self.ui.bForceNoAbsorptionSkullScalpcheckBox.isChecked()
         self.NewValues.TxOptimizedWeights[self._TxSystem] = self.ui.TxOptimizedWeightsLineEdit.text()
         self.NewValues.TelemetryLevel = self._telemetryWidget.selected_level()
+        self.NewValues.FLLevel = self._flWidget.selected_level()
+        self.NewValues.FLStore = self._flWidget.store_folder()
 
         self.accept()
 
