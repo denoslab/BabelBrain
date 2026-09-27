@@ -116,8 +116,9 @@ never leaves it; the code cannot be turned back into the folder name.
 
 ### What is shared at the "Collect and train" level
 
-The federated learning client sends, over an encrypted connection, to a
-coordination server run by the NeuroFUS laboratory at the University of Calgary:
+The federated learning client sends, over an encrypted connection, to a relay
+server run by the DENOS laboratory at the University of Calgary, from which the
+NeuroFUS laboratory, also at the University of Calgary, combines the updates:
 
 - changes to the model's weights after training on your samples, which do not
   contain the samples;
