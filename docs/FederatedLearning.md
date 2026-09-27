@@ -58,6 +58,10 @@ each run, so you state them for the whole folder; runs without them are skipped.
 `--dry-run` only counts; run again without it to save the samples. Running it
 twice adds nothing new.
 
+`--eval-regions` is only for the NeuroFUS evaluation set. It labels each sample
+with the region of its target, such as P7, so the evaluation can report results
+per region. Do not use it for your own sample folder.
+
 ## Without the settings tab
 
 Before the tab is available in a build, the level and folder can be set with

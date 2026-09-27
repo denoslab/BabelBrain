@@ -28,10 +28,11 @@ def setup(tmp_path):
     return {'store': str(tmp_path / 'store'), 'subject': str(subject), 'full': full, 'water': water}
 
 
-def export(setup, crop_fn=None, **overrides):
+def export(setup, crop_fn=None, region=None, **overrides):
     return export_from_step2(setup['full'], setup['water'],
                              synthetic.run_info(setup['subject'], **overrides),
-                             store_root=setup['store'], crop=crop_fn or synthetic.fake_crop())
+                             store_root=setup['store'], crop=crop_fn or synthetic.fake_crop(),
+                             region=region)
 
 
 def manifest_lines(store_root):
@@ -52,6 +53,7 @@ def test_exported_sample_follows_the_contract(setup):
     assert entry['file'] == '250000/{}.h5'.format(result.sample_id)
     assert entry['bucket_hz'] == 250000 and entry['ct_type'] == 'CT' and entry['source'] == 'live'
     assert len(entry['group_id']) == 64 and entry['split'] in ('train', 'val')
+    assert entry['schema_version'] == '1.0' and 'region' not in entry
     path = os.path.join(setup['store'], 'v1', entry['file'])
     with h5py.File(path, 'r') as f:
         assert f.attrs['schema_version'] == '1.0'
@@ -151,6 +153,41 @@ def test_starfish_reads_what_babelbrain_writes(setup, tmp_path):
                           store_root=setup['store'], crop=synthetic.fake_crop())
     samples = module.SampleStore(setup['store']).samples(250000)
     assert len(samples) == 3
+    # A 1.1 test-set sample with a region, D6
+    full, water = synthetic.fake_step2_outputs(setup['subject'] + 'eval', seed=9)
+    export_from_step2(full, water, synthetic.run_info(setup['subject'] + 'eval'),
+                      store_root=setup['store'], crop=synthetic.fake_crop(), region='TP7')
+    samples = module.SampleStore(setup['store']).samples(250000)
+    assert len(samples) == 4 and sorted(s.region or '' for s in samples) == ['', '', '', 'TP7']
+
+
+# --------------------------------------------------
+# Region labels, schema 1.1, D6
+# --------------------------------------------------
+
+def test_region_makes_a_1_1_sample(setup):
+    jsonschema = pytest.importorskip('jsonschema')
+    result = export(setup, region='PO7')
+    assert result.status == 'exported', result
+    (entry,) = manifest_lines(setup['store'])
+    assert entry['schema_version'] == '1.1' and entry['region'] == 'PO7'
+    with h5py.File(os.path.join(setup['store'], 'v1', entry['file']), 'r') as f:
+        assert f.attrs['schema_version'] == '1.1'
+    with open(schema.SCHEMA_PATH) as f:
+        validator = jsonschema.Draft202012Validator(json.load(f))
+    validator.validate(entry)
+    assert not validator.is_valid(dict(entry, schema_version='1.0'))
+
+
+def test_unknown_region_is_refused(setup):
+    result = export(setup, region='Fz')
+    assert (result.status, result.reason) == ('rejected', 'invalid_region')
+    assert SampleStore(setup['store']).counters() == {'invalid_region': 1}
+
+
+def test_region_classes_match_the_contract():
+    assert schema.REGIONS == ('P7', 'P8', 'PO7', 'TP7', 'TP8', 'other')
+    assert (schema.SCHEMA_VERSION, schema.EVAL_SCHEMA_VERSION) == ('1.0', '1.1')
 
 
 # --------------------------------------------------
